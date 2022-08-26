@@ -1,0 +1,66 @@
+buildscript{
+	ext{
+		springBootVersion = '2.7.2'
+	}
+
+	repositories {
+		mavenCentral()
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		}
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.1')
+	}
+}
+plugins {
+	id 'org.springframework.boot' version '2.7.2'
+	id 'io.spring.dependency-management' version '1.0.12.RELEASE'
+	id 'java'
+	id 'com.palantir.docker' version '0.22.1'
+}
+
+group = 'nazinsk'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+bootJar{
+	baseName = 'curso_aws_project01'
+	version = '1.6.0'
+}
+
+task unpack(type: Copy){
+	dependsOn bootJar
+	from(zipTree(tasks.bootJar.outputs.files.singleFile))
+	into("build/dependency")
+}
+
+docker{
+	name "${project.group}/${bootJar.baseName}"
+	tags "${bootJar.version}"
+	copySpec.from(tasks.unpack.outputs).into("dependency")
+	buildArgs(['DEPENDENCY' : 'dependency'])
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	implementation group: 'com.amazonaws', name: 'aws-java-sdk-sns', version: '1.11.887'
+	implementation group: 'com.amazonaws', name: 'aws-java-sdk-sqs', version: '1.12.285'
+
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '2.7.0'
+	implementation group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.2.0'
+	implementation 'org.projectlombok:lombok:1.18.22'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
